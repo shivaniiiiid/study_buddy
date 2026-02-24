@@ -12,7 +12,10 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -34,14 +37,14 @@ app.get('/test-api', async (req, res) => {
   try {
     console.log('Testing AI Service...');
     console.log('AI Provider:', process.env.AI_PROVIDER || 'openai');
-    
+
     const aiService = require('./services/aiService');
     const result = await aiService.testConnection();
-    
+
     if (result.success) {
       res.json({
         success: true,
-        data: { 
+        data: {
           message: 'AI service test successful',
           provider: result.provider,
           response: result.result
