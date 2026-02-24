@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { initializeDatabase } = require('./models/database');
 const errorHandler = require('./middleware/errorHandler');
 
@@ -10,6 +11,7 @@ const noteRoutes = require('./routes/notes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const isProduction = process.env.NODE_ENV === 'production';
 
 // Middleware
 app.use(cors({
@@ -18,6 +20,11 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve React build in production
+if (isProduction) {
+  app.use(express.static(path.join(__dirname, '../client/build')));
+}
 
 // Routes
 app.use('/courses', courseRoutes);
@@ -70,6 +77,13 @@ app.get('/test-api', async (req, res) => {
 
 // Error handling middleware
 app.use(errorHandler);
+
+// Catch-all: serve React app for any non-API route (production only)
+if (isProduction) {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
+  });
+}
 
 // Initialize database and start server
 const startServer = async () => {
