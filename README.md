@@ -1,375 +1,218 @@
-# StudyBuddy - AI-Powered Study Organization Tool
+# StudyBuddy
 
-A hierarchical AI-powered study organization tool that helps students manage their courses and notes with AI-generated summaries.
+A personal study organizer I built to help manage notes and courses in one place. It uses AI to summarize notes and can even generate quiz questions — which honestly makes reviewing stuff a lot easier.
 
-## 🏗️ System Architecture
+The stack is pretty simple: React on the frontend, Node/Express on the backend, and SQLite for storage. No complicated setup needed.
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   React App     │    │  Express API    │    │   SQLite DB     │
-│   (Frontend)    │◄──►│   (Backend)     │◄──►│   (Database)    │
-│                 │    │                 │    │                 │
-│ - Dashboard     │    │ - REST Routes   │    │ - users         │
-│ - Course Mgmt   │    │ - Controllers   │    │ - courses       │
-│ - Note Editor   │    │ - AI Integration│    │ - notes        │
-│ - AI Summaries  │    │ - Error Handling│    │ - Foreign Keys  │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
+---
 
-## 🗄️ Database Schema
+## What it can do
 
-### SQLite Schema Diagram
+- Create courses and organize notes inside them
+- Upload PDFs alongside notes and preview them in-app
+- Generate AI summaries of your notes with one click
+- Generate quiz questions from note content (fill-in-the-blank style)
+- Mark notes as "reviewed" to track study progress
+- Search across all your courses and notes from the dashboard
+- Switch between dark and light mode (preference is saved)
 
-```
-users
-├── id (INTEGER PRIMARY KEY)
-├── email (TEXT UNIQUE)
-└── created_at (DATETIME)
+---
 
-courses
-├── id (INTEGER PRIMARY KEY)
-├── user_id (INTEGER → users.id)
-├── name (TEXT NOT NULL)
-├── description (TEXT)
-├── created_at (DATETIME)
-└── updated_at (DATETIME)
+## Getting it running
 
-notes
-├── id (INTEGER PRIMARY KEY)
-├── course_id (INTEGER → courses.id)
-├── title (TEXT NOT NULL)
-├── body (TEXT)
-├── summary (TEXT)
-├── pdf_path (TEXT) - Stores uploaded PDF filename
-├── created_at (DATETIME)
-└── updated_at (DATETIME)
+You'll need **Node.js v14+** installed. That's pretty much it.
+
+### 1. Install backend dependencies
+
+```bash
+cd server
+npm install
 ```
 
-### Foreign Key Relationships
+### 2. Set up your environment variables
 
-- `courses.user_id` → `users.id` (ON DELETE CASCADE)
-- `notes.course_id` → `courses.id` (ON DELETE CASCADE)
+Copy the example file and fill in your keys:
 
-### Cascade Delete Implementation
-
-```sql
-PRAGMA foreign_keys = ON;
-
--- When a user is deleted, all their courses are automatically deleted
--- When a course is deleted, all its notes are automatically deleted
+```bash
+cp .env.example .env
 ```
 
-## 🚀 Getting Started
+The `.env` file looks like this:
 
-### Prerequisites
+```env
+PORT=3001
+AI_PROVIDER=local
 
-- Node.js (v14 or higher)
-- npm or yarn
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd studybuddy
-   ```
-
-2. **Set up the backend**
-   ```bash
-   cd server
-   npm install
-   ```
-
-3. **Configure environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your API keys
-   ```
-
-4. **Start the backend server**
-   ```bash
-   node app.js
-   ```
-
-5. **Set up the frontend**
-   ```bash
-   cd ../client
-   npm install
-   ```
-
-6. **Start the frontend development server**
-   ```bash
-   npm start
-   ```
-
-The application will be available at:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:3001
-
-## 📡 API Endpoints
-
-### Courses
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/courses` | Get all courses |
-| POST | `/courses` | Create a new course |
-| GET | `/courses/:id` | Get a specific course |
-| PUT | `/courses/:id` | Update a course |
-| DELETE | `/courses/:id` | Delete a course (and all its notes) |
-
-### Notes
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/courses/:courseId/notes` | Get all notes for a course |
-| POST | `/courses/:courseId/notes` | Create a new note (with optional PDF) |
-| GET | `/notes/:id` | Get a specific note |
-| PUT | `/notes/:id` | Update a note |
-| DELETE | `/notes/:id` | Delete a note (and associated PDF) |
-| POST | `/notes/:id/summarize` | Generate AI summary for a note |
-
-### Files
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/pdf/:filename` | Serve uploaded PDF files |
-
-### Response Format
-
-All API responses follow this structure:
-
-**Success Response:**
-```json
-{
-  "success": true,
-  "data": {},
-  "error": null
-}
+# Pick one of these depending on what you're using:
+GEMINI_API_KEY=your_key_here
+HUGGINGFACE_API_KEY=your_key_here
+LLM_API_KEY=your_openai_key_here
 ```
 
-**Error Response:**
-```json
-{
-  "success": false,
-  "data": null,
-  "error": "Error message"
-}
+See `FREE_AI_SETUP.md` for details on each option. If you leave `AI_PROVIDER=local`, it'll use a basic built-in fallback — no API key needed.
+
+### 3. Start the server
+
+```bash
+node app.js
 ```
 
-**AI Summary Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "note": {
-      "id": 1,
-      "title": "Note Title",
-      "body": "Note content...",
-      "summary": "• Key point 1\n• Key point 2\n• Key point 3"
-    }
-  },
-  "latency_ms": 842,
-  "error": null
-}
+### 4. Install and start the frontend
+
+Open a new terminal:
+
+```bash
+cd client
+npm install
+npm start
 ```
 
-## 🤖 AI Integration
+That's it. Frontend runs on `http://localhost:3000`, backend on `http://localhost:3001`.
 
-### Prompt Design
+---
 
-The AI summarization uses a carefully crafted prompt:
-
-```
-Summarize the following study note into 3–5 concise bullet points focusing only on key concepts:
-
-[Note content here]
-```
-
-### AI Configuration
-
-- **Model**: GPT-3.5-turbo (or compatible)
-- **Temperature**: 0.3 (for consistent, focused summaries)
-- **Max Tokens**: 150 (for concise summaries)
-- **Response Format**: Bullet points focusing on key concepts
-
-### Error Handling
-
-- Empty note bodies are rejected
-- API failures are caught and user-friendly messages shown
-- Latency is measured and included in responses
-- Fallback behavior when AI service is unavailable
-
-## 🧪 Edge Case Handling
-
-### Database Operations
-- **SQL Injection Prevention**: All queries use parameterized statements
-- **Invalid IDs**: 404 responses for non-existent resources
-- **Empty Data**: Validation for required fields
-- **Cascade Deletes**: Automatic cleanup of related data
-
-### API Error Handling
-- **Centralized Error Middleware**: Consistent error responses
-- **Input Validation**: Required field checking
-- **Rate Limiting**: Basic protection for AI endpoints
-- **Timeout Handling**: Configurable timeouts for external API calls
-
-### Frontend Validation
-- **Form Validation**: Client-side validation before API calls
-- **Loading States**: Visual feedback during async operations
-- **Error Messages**: User-friendly error display
-- **Responsive Design**: Mobile-friendly interface
-
-## 📁 Project Structure
+## Project structure
 
 ```
 studybuddy/
 ├── server/
+│   ├── app.js                  # Entry point, sets up Express
+│   ├── .env                    # Your API keys go here
 │   ├── controllers/
 │   │   ├── courseController.js
-│   │   └── noteController.js
+│   │   └── noteController.js   # Handles summaries, quizzes, reviews
 │   ├── models/
-│   │   └── database.js
+│   │   └── database.js         # SQLite schema + migrations
 │   ├── routes/
 │   │   ├── courses.js
 │   │   └── notes.js
 │   ├── middleware/
-│   │   └── errorHandler.js
-│   ├── app.js
-│   ├── package.json
-│   └── .env
+│   │   ├── errorHandler.js
+│   │   └── fileUpload.js       # Multer config (PDF only)
+│   └── services/
+│       └── aiService.js        # Abstraction for different AI providers
+│
 ├── client/
-│   ├── src/
-│   │   ├── pages/
-│   │   │   ├── Dashboard.js
-│   │   │   ├── CourseDetail.js
-│   │   │   └── NoteDetail.js
-│   │   ├── services/
-│   │   │   └── api.js
-│   │   ├── App.js
-│   │   ├── index.js
-│   │   ├── App.css
-│   │   └── index.css
-│   ├── public/
-│   │   └── index.html
-│   └── package.json
-└── README.md
+│   └── src/
+│       ├── components/
+│       │   └── Header.js       # Shared header with theme toggle
+│       ├── pages/
+│       │   ├── Dashboard.js    # Course list + global search
+│       │   ├── CourseDetail.js # Notes for a course
+│       │   └── NoteDetail.js   # Note editor, AI tools, quiz
+│       ├── services/
+│       │   └── api.js
+│       ├── ThemeContext.js     # Dark/light mode state
+│       ├── App.js
+│       ├── App.css
+│       └── index.css
+│
+├── README.md
+└── FREE_AI_SETUP.md
 ```
 
-## 🛠️ Technologies Used
+---
 
-### Backend
-- **Node.js**: JavaScript runtime
-- **Express.js**: Web framework
-- **SQLite3**: Database engine
-- **Axios**: HTTP client for AI API calls
-- **Multer**: File upload handling for PDFs
-- **CORS**: Cross-origin resource sharing
-- **dotenv**: Environment variable management
+## API reference
 
-### Frontend
-- **React.js**: UI library with functional components and hooks
-- **React Router**: Client-side routing
-- **Axios**: HTTP client for API calls
-- **CSS3**: Responsive styling
+### Courses
 
-## 🔧 Development Commands
+| Method | Endpoint | What it does |
+|--------|----------|--------------|
+| GET | `/courses` | List all courses |
+| POST | `/courses` | Create a course |
+| GET | `/courses/:id` | Get one course |
+| PUT | `/courses/:id` | Update a course |
+| DELETE | `/courses/:id` | Delete course + all its notes |
 
-### Backend
-```bash
-cd server
-npm install          # Install dependencies
-node app.js          # Start development server
-npm run dev          # Start with nodemon (if installed)
+### Notes
+
+| Method | Endpoint | What it does |
+|--------|----------|--------------|
+| GET | `/notes` | List all notes |
+| GET | `/courses/:courseId/notes` | Notes for a specific course |
+| POST | `/courses/:courseId/notes` | Create a note (PDF optional) |
+| GET | `/notes/:id` | Get one note |
+| PUT | `/notes/:id` | Update a note |
+| DELETE | `/notes/:id` | Delete note + PDF file |
+| POST | `/notes/:id/summarize` | Generate AI summary |
+| POST | `/notes/:id/quiz` | Generate quiz questions |
+| PATCH | `/notes/:id/review` | Toggle reviewed status |
+| GET | `/pdf/:filename` | Serve a PDF file |
+
+All responses follow the same shape:
+
+```json
+{
+  "success": true,
+  "data": { ... },
+  "error": null
+}
 ```
 
-### Frontend
-```bash
-cd client
-npm install          # Install dependencies
-npm start            # Start development server
-npm run build        # Build for production
+---
+
+## Database schema
+
+```
+users
+  id, email, created_at
+
+courses
+  id, user_id → users.id, name, description, created_at, updated_at
+
+notes
+  id, course_id → courses.id, title, body, summary, quiz,
+  is_reviewed, pdf_path, created_at, updated_at
 ```
 
-## 📱 Features
+Cascade deletes are enabled — deleting a course removes all its notes automatically.
 
-### Core Functionality
-- ✅ Create, read, update, delete courses
-- ✅ Create, read, update, delete notes within courses
-- ✅ Hierarchical organization (courses → notes)
-- ✅ AI-powered note summarization
-- ✅ PDF file upload and preview
-- ✅ Responsive web design
-- ✅ Real-time updates
+---
 
-### PDF Features
-- 📄 Upload PDF files with notes (10MB limit)
-- 📖 In-app PDF preview with iframe
-- 🔗 Direct PDF download links
-- 🗂️ Automatic file cleanup on note deletion
-- 📊 File size display during upload
+## AI setup
 
-### User Experience
-- 📱 Mobile-responsive interface
-- 🎨 Clean, modern UI design
-- ⚡ Fast loading and interactions
-- 🔍 Intuitive navigation with breadcrumbs
-- 💾 Auto-save functionality
-- 📊 Visual feedback for all operations
+The app supports four providers. Check `FREE_AI_SETUP.md` for full instructions.
 
-## 🚀 Deployment
+| Provider | Cost | Notes |
+|----------|------|-------|
+| Local (built-in) | Free | No API needed, basic output |
+| Hugging Face | Free | Good quality, slightly slow |
+| Google Gemini | Free tier | Fast, generous limits |
+| Ollama | Free, local | Runs on your machine |
+| OpenAI | Paid | Best quality |
 
-### Environment Variables
-```env
-PORT=3001
-LLM_API_KEY=your_openai_api_key_here
-LLM_API_URL=https://api.openai.com/v1/chat/completions
-```
+Switch providers by changing `AI_PROVIDER` in `.env` and restarting the server.
 
-### Production Considerations
-- Use HTTPS in production
-- Implement proper authentication
-- Add rate limiting for AI endpoints
-- Set up database backups
-- Configure proper CORS for your domain
-- Use environment-specific configuration
+---
 
-## 🤝 Contributing
+## Tech used
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+**Backend:** Node.js, Express, SQLite3, Multer, Axios, dotenv
 
-## 📄 License
+**Frontend:** React, React Router, Axios, vanilla CSS (no framework)
 
-This project is licensed under the MIT License.
+---
 
-## 🆘 Troubleshooting
+## Things I'd add next
 
-### Common Issues
+- Proper user authentication (the DB schema already has a `users` table ready)
+- Pomodoro timer per course
+- Export notes as PDF
+- Spaced repetition for the quiz feature
 
-1. **Database Connection Error**
-   - Ensure SQLite3 is properly installed
-   - Check file permissions for the database file
+---
 
-2. **AI API Not Working**
-   - Verify your API key is correct
-   - Check if you have sufficient API credits
-   - Ensure the API URL is correct
+## Troubleshooting
 
-3. **CORS Issues**
-   - Make sure the backend CORS is configured correctly
-   - Check that the frontend is running on the correct port
+**Server won't start** — make sure you're in the `server/` folder and have run `npm install`.
 
-4. **Frontend Build Errors**
-   - Clear node_modules and reinstall
-   - Check for conflicting dependency versions
+**AI summarize does nothing** — check your `.env` file has the right key and `AI_PROVIDER` matches it. Restart the server after any `.env` change.
 
-### Getting Help
+**"Cannot GET /api/..."** — the API doesn't use an `/api` prefix. Routes are directly at `/notes`, `/courses`, etc.
 
-- Check the console for detailed error messages
-- Verify all environment variables are set
-- Ensure both frontend and backend are running
-- Check network connectivity for AI API calls
+**PDF not showing** — PDFs are stored in `server/uploads/`. Make sure that folder exists and the server has write permissions.
+
+**Frontend can't reach backend** — double check that the backend is running on port 3001. The frontend proxies requests there automatically.
+
+**Light mode text invisible** — this was a known issue that's been fixed. If you're on an older build, pull the latest changes.

@@ -1,162 +1,139 @@
-# Free AI API Setup Guide
+# Setting up a free AI provider
 
-StudyBuddy now supports multiple free AI providers for note summarization! Choose the one that works best for you.
-
-## 🆓 **Option 1: Hugging Face (Recommended - Free)**
-
-### Setup:
-1. **Get API Key**:
-   - Go to https://huggingface.co/settings/tokens
-   - Create a new token (it's free)
-   - Copy the token
-
-2. **Update .env file**:
-   ```env
-   HUGGINGFACE_API_KEY=hf_your_token_here
-   AI_PROVIDER=huggingface
-   ```
-
-3. **Restart server**:
-   ```cmd
-   cd server
-   node app.js
-   ```
-
-**Pros**: Completely free, good models, no rate limits
-**Cons**: Slower than paid options
+By default the app uses a local fallback for summaries and quizzes — it works, but the output is pretty basic. If you want proper AI-generated results, pick one of the options below. All of them have a free tier.
 
 ---
 
-## 🚀 **Option 2: Google Gemini (Free Tier Available)**
+## Option 1 — Hugging Face (easiest free option)
 
-### Setup:
-1. **Get API Key**:
-   - Go to https://makersuite.google.com/app/apikey
-   - Create a new API key (free tier available)
-   - Copy the key
-
-2. **Update .env file**:
-   ```env
-   GEMINI_API_KEY=your_gemini_api_key_here
-   AI_PROVIDER=gemini
-   ```
-
-3. **Restart server**:
-   ```cmd
-   cd server
-   node app.js
-   ```
-
-**Pros**: Fast, good quality, generous free tier
-**Cons**: May have usage limits
-
----
-
-## 🦙 **Option 3: Ollama (100% Free & Local)**
-
-### Setup:
-1. **Install Ollama**:
-   ```cmd
-   # Download from https://ollama.ai
-   # Install and run Ollama
-   ollama serve
-   ```
-
-2. **Download a model**:
-   ```cmd
-   ollama pull mistral
-   ```
-
-3. **Update .env file**:
-   ```env
-   AI_PROVIDER=ollama
-   OLLAMA_MODEL=mistral
-   ```
-
-4. **Restart server**:
-   ```cmd
-   cd server
-   node app.js
-   ```
-
-**Pros**: Completely free, runs locally, no internet needed
-**Cons**: Requires local setup, uses your computer resources
-
----
-
-## 🔧 **How to Switch Providers**
-
-Simply change the `AI_PROVIDER` value in your `.env` file:
+1. Go to https://huggingface.co/settings/tokens and sign up/log in
+2. Click "New token", give it a name, select "Read" access, and create it
+3. Copy the token (starts with `hf_...`)
+4. Open `server/.env` and update:
 
 ```env
-# For OpenAI (default)
-AI_PROVIDER=openai
-
-# For Hugging Face
+HUGGINGFACE_API_KEY=hf_your_token_here
 AI_PROVIDER=huggingface
+```
 
-# For Google Gemini  
+5. Restart the server (`node app.js`)
+
+Works straight away. Free with no billing info required. A bit slower than paid options but the quality is fine for study notes.
+
+---
+
+## Option 2 — Google Gemini (fast, generous free tier)
+
+1. Go to https://aistudio.google.com/app/apikey
+2. Sign in with a Google account and create an API key
+3. Copy the key
+4. Open `server/.env` and update:
+
+```env
+GEMINI_API_KEY=your_key_here
 AI_PROVIDER=gemini
+```
 
-# For Ollama
+5. Restart the server
+
+Gemini is noticeably faster than Hugging Face and the free tier limit is pretty generous for personal use.
+
+---
+
+## Option 3 — Ollama (runs 100% on your machine, no internet needed)
+
+Good if you don't want to send your notes to any external service.
+
+1. Download and install Ollama from https://ollama.ai
+2. Open a terminal and pull a model:
+
+```bash
+ollama pull mistral
+```
+
+3. Make sure Ollama is running:
+
+```bash
+ollama serve
+```
+
+4. Open `server/.env` and update:
+
+```env
 AI_PROVIDER=ollama
+OLLAMA_MODEL=mistral
+OLLAMA_API_URL=http://localhost:11434
+```
+
+5. Restart the server
+
+Takes a few minutes to pull the model the first time, but after that it's instant and completely offline.
+
+---
+
+## Option 4 — OpenAI (best output, but costs money)
+
+1. Get an API key from https://platform.openai.com/api-keys
+2. Open `server/.env` and update:
+
+```env
+LLM_API_KEY=sk-your-key-here
+LLM_API_URL=https://api.openai.com/v1/chat/completions
+AI_PROVIDER=openai
+```
+
+3. Restart the server
+
+Quality is the best of all four options. Worth it if you already have credits.
+
+---
+
+## Switching providers later
+
+Just change `AI_PROVIDER` in `.env` and restart the server. That's all you need to do.
+
+```env
+AI_PROVIDER=local         # built-in fallback, no key needed
+AI_PROVIDER=huggingface   # Hugging Face
+AI_PROVIDER=gemini        # Google Gemini
+AI_PROVIDER=ollama        # local Ollama
+AI_PROVIDER=openai        # OpenAI
 ```
 
 ---
 
-## 🧪 **Test Your Setup**
+## Quick comparison
 
-After setting up any provider:
-
-1. **Restart the server**
-2. **Test the connection**:
-   ```cmd
-   curl http://localhost:3001/test-api
-   ```
-   Or visit: `http://localhost:3001/test-api`
-
-3. **Try generating a summary** in the app
+| Provider | Cost | Speed | Quality |
+|----------|------|-------|---------|
+| Local (built-in) | Free | Instant | Basic |
+| Hugging Face | Free | Slow-ish | Good |
+| Gemini | Free tier | Fast | Very good |
+| Ollama | Free | Medium | Good |
+| OpenAI | Paid | Fast | Best |
 
 ---
 
-## 📊 **Comparison**
+## Testing if it works
 
-| Provider | Cost | Speed | Quality | Setup |
-|----------|-------|-------|--------|-------|
-| Hugging Face | Free | Medium | Good | Easy |
-| Gemini | Free tier | Fast | Very Good | Easy |
-| Ollama | 100% Free | Medium | Good | Medium |
-| OpenAI | Paid | Fast | Excellent | Easy |
+After setting a provider and restarting the server, visit:
 
----
+```
+http://localhost:3001/test-api
+```
 
-## 🚨 **Troubleshooting**
+You should see a success response with the provider name and a test output. If it fails, the error message usually tells you what's wrong (bad key, wrong URL, model not found, etc.).
 
-**Hugging Face Issues**:
-- Check your token is correct
-- Ensure model name is correct
-
-**Gemini Issues**:
-- Verify API key is enabled
-- Check your Google Cloud quota
-
-**Ollama Issues**:
-- Make sure Ollama is running: `ollama serve`
-- Check model is downloaded: `ollama list`
-
-**General Issues**:
-- Restart server after changing .env
-- Check console logs for specific errors
-- Test with `/test-api` endpoint first
+Then try clicking "AI Summarize" or "Generate Quiz" on any note with content.
 
 ---
 
-## 💡 **Recommendation**
+## Common issues
 
-For most users, **Hugging Face** is the best free option:
-- ✅ Completely free
-- ✅ Good quality summaries
-- ✅ Easy setup
-- ✅ No rate limiting issues
+**Hugging Face returns 401** — token is wrong or expired. Generate a new one.
 
-Choose the provider that fits your needs and budget!
+**Gemini returns 403** — the API key might not be enabled yet. Try waiting a minute after creating it.
+
+**Ollama not connecting** — make sure `ollama serve` is running in a separate terminal. It doesn't start automatically.
+
+**Nothing changes after editing .env** — you need to restart the server every time you change `.env`. The app doesn't hot-reload environment variables.

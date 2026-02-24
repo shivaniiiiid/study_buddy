@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Environment variables — never commit these
+.env
+server/.env
+*.env.local
+*.env.production
+
+# SQLite database file
+server/*.db
+server/*.sqlite
+*.db
+*.sqlite
+
+# Uploaded PDF files
+server/uploads/
+
+# React build output
+client/build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor folders
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Nodemon
+nodemon.json
