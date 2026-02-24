@@ -1,8 +1,10 @@
 [phases.setup]
-nixPkgs = ["nodejs_20"]
+nixPkgs = ["nodejs_20", "python3", "gcc", "gnumake"]
 
 [phases.install]
-cmds = ["cd server && npm install"]
+cmds = [
+  "cd server && npm install --build-from-source sqlite3"
+]
 
 [start]
 cmd = "cd server && node app.js"
