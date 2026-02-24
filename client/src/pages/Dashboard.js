@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { courseAPI } from '../services/api';
+import { courseAPI, noteAPI } from '../services/api';
 
 const Dashboard = () => {
   const [courses, setCourses] = useState([]);
+  const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '' });
@@ -11,6 +12,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchCourses();
+    fetchNotes();
   }, []);
 
   const fetchCourses = async () => {
@@ -19,10 +21,25 @@ const Dashboard = () => {
       setCourses(response.data.data);
     } catch (error) {
       console.error('Error fetching courses:', error);
-    } finally {
-      setLoading(false);
     }
   };
+
+  const fetchNotes = async () => {
+    try {
+      const response = await noteAPI.getAll();
+      setNotes(response.data.data);
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    }
+  };
+
+  useEffect(() => {
+    const loadData = async () => {
+      await Promise.all([fetchCourses(), fetchNotes()]);
+      setLoading(false);
+    };
+    loadData();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -58,8 +75,9 @@ const Dashboard = () => {
   };
 
   const getNoteCount = (courseId) => {
-    // This would typically come from the API, but for now we'll use a placeholder
-    return Math.floor(Math.random() * 10) + 1;
+    // Get actual note count from the notes data
+    const courseNotes = notes.filter(note => note.course_id === courseId);
+    return courseNotes.length;
   };
 
   if (loading) {

@@ -20,6 +20,7 @@ export const courseAPI = {
 
 // Note API calls
 export const noteAPI = {
+  getAll: () => api.get('/notes'),
   getByCourse: (courseId) => api.get(`/courses/${courseId}/notes`),
   getById: (id) => api.get(`/notes/${id}`),
   create: (courseId, data, file) => {

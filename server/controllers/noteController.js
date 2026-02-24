@@ -4,6 +4,34 @@ const fs = require('fs');
 const path = require('path');
 
 const noteController = {
+  // GET /notes - Get all notes
+  getAllNotes: async (req, res) => {
+    try {
+      const sql = 'SELECT * FROM notes ORDER BY created_at DESC';
+      
+      db.all(sql, [], (err, rows) => {
+        if (err) {
+          return res.status(500).json({
+            success: false,
+            data: null,
+            error: err.message
+          });
+        }
+        res.json({
+          success: true,
+          data: rows,
+          error: null
+        });
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        data: null,
+        error: error.message
+      });
+    }
+  },
+
   // GET /courses/:courseId/notes
   getNotesByCourse: async (req, res) => {
     try {
@@ -421,6 +449,7 @@ const noteController = {
 };
 
 module.exports = {
+  getAllNotes: noteController.getAllNotes,
   getNotesByCourse: noteController.getNotesByCourse,
   getNoteById: noteController.getNoteById,
   createNote: noteController.createNote,

@@ -3,6 +3,9 @@ const router = express.Router();
 const noteController = require('../controllers/noteController');
 const upload = require('../middleware/fileUpload');
 
+// GET /notes - Get all notes
+router.get('/notes', noteController.getAllNotes);
+
 // GET /courses/:courseId/notes
 router.get('/courses/:courseId/notes', noteController.getNotesByCourse);
 
