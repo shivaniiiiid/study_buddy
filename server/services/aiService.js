@@ -29,23 +29,28 @@ class AIService {
     try {
       console.log('Using local summarization');
       
-      // Simple rule-based summarization
-      const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-      const words = text.split(/\s+/);
+      // Clean and prepare text
+      const cleanText = text.trim();
+      if (!cleanText) {
+        return '• No content to summarize';
+      }
+      
+      const words = cleanText.split(/\s+/);
       const wordCount = words.length;
+      const sentences = cleanText.split(/[.!?]+/).filter(s => s.trim().length > 0);
       
       // Extract key concepts (simple heuristic)
       const keyWords = words.filter(word => 
         word.length > 5 && 
-        !['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'with', 'by'].includes(word.toLowerCase())
+        !['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'this', 'that', 'from', 'they', 'have', 'been', 'will', 'would', 'could', 'should'].includes(word.toLowerCase())
       ).slice(0, 5);
       
       // Generate summary based on content length
       let summary = '';
       
-      if (wordCount < 50) {
+      if (wordCount < 20) {
         summary = `• Brief note about ${keyWords[0] || 'main topic'}`;
-      } else if (wordCount < 150) {
+      } else if (wordCount < 50) {
         summary = `• Key points about ${keyWords[0] || 'main topic'}:\n`;
         summary += `  • Covers ${keyWords[1] || 'important concept'}\n`;
         summary += `  • Includes ${keyWords[2] || 'relevant details'}`;
