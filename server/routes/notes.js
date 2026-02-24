@@ -24,6 +24,12 @@ router.delete('/notes/:id', noteController.deleteNote);
 // POST /notes/:id/summarize
 router.post('/notes/:id/summarize', noteController.summarizeNote);
 
+// PATCH /notes/:id/review - Toggle reviewed status
+router.patch('/notes/:id/review', noteController.toggleReview);
+
+// POST /notes/:id/quiz - Generate AI quiz
+router.post('/notes/:id/quiz', noteController.generateQuiz);
+
 // GET /pdf/:filename - Serve PDF files
 router.get('/pdf/:filename', noteController.servePDF);
 

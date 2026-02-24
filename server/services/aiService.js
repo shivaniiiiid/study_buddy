@@ -11,7 +11,7 @@ class AIService {
     if (this.provider === 'local') {
       return this.summarizeLocally(text);
     }
-    
+
     switch (this.provider) {
       case 'huggingface':
         return await this.summarizeWithHuggingFace(text);
@@ -28,26 +28,26 @@ class AIService {
   summarizeLocally(text) {
     try {
       console.log('Using local summarization');
-      
+
       // Clean and prepare text
       const cleanText = text.trim();
       if (!cleanText) {
         return '• No content to summarize';
       }
-      
+
       const words = cleanText.split(/\s+/);
       const wordCount = words.length;
       const sentences = cleanText.split(/[.!?]+/).filter(s => s.trim().length > 0);
-      
+
       // Extract key concepts (simple heuristic)
-      const keyWords = words.filter(word => 
-        word.length > 5 && 
+      const keyWords = words.filter(word =>
+        word.length > 5 &&
         !['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'this', 'that', 'from', 'they', 'have', 'been', 'will', 'would', 'could', 'should'].includes(word.toLowerCase())
       ).slice(0, 5);
-      
+
       // Generate summary based on content length
       let summary = '';
-      
+
       if (wordCount < 20) {
         summary = `• Brief note about ${keyWords[0] || 'main topic'}`;
       } else if (wordCount < 50) {
@@ -60,7 +60,7 @@ class AIService {
         summary += `  • Key details: ${sentences.slice(0, 2).join('. ')}.\n`;
         summary += `  • Total: ${wordCount} words analyzed`;
       }
-      
+
       return summary;
     } catch (error) {
       console.error('Local summarization error:', error.message);
@@ -71,7 +71,7 @@ class AIService {
   async summarizeWithOpenAI(text) {
     try {
       console.log('Using OpenAI for summarization');
-      
+
       const response = await axios.post(
         process.env.LLM_API_URL,
         {
@@ -112,7 +112,7 @@ class AIService {
   async summarizeWithHuggingFace(text) {
     try {
       console.log('Using Hugging Face for summarization');
-      
+
       const response = await axios.post(
         process.env.HUGGINGFACE_API_URL,
         {
@@ -152,7 +152,7 @@ class AIService {
   async summarizeWithGemini(text) {
     try {
       console.log('Using Google Gemini for summarization');
-      
+
       const response = await axios.post(
         process.env.GEMINI_API_URL,
         {
@@ -206,7 +206,7 @@ class AIService {
       console.log('Using Ollama for summarization');
       console.log('Ollama URL:', process.env.OLLAMA_API_URL);
       console.log('Ollama Model:', process.env.OLLAMA_MODEL);
-      
+
       const response = await axios.post(
         process.env.OLLAMA_API_URL,
         {
@@ -242,9 +242,70 @@ class AIService {
     }
   }
 
+  async generateQuiz(text) {
+    if (this.provider === 'local') {
+      return this.generateQuizLocally(text);
+    }
+    try {
+      const prompt = `Based on the following study note, generate 3-5 quiz questions with answers. Return ONLY a valid JSON array in this exact format, no other text:
+[{"question": "...", "answer": "..."}, ...]
+
+Study note:
+${text}`;
+
+      let rawResult;
+      switch (this.provider) {
+        case 'gemini':
+          rawResult = await this.summarizeWithGemini(prompt);
+          break;
+        case 'huggingface':
+          rawResult = await this.summarizeWithHuggingFace(prompt);
+          break;
+        case 'ollama':
+          rawResult = await this.summarizeWithOllama(prompt);
+          break;
+        default:
+          rawResult = await this.summarizeWithOpenAI(prompt);
+      }
+
+      // Extract JSON from response (handle markdown code blocks)
+      const jsonMatch = rawResult.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+      return this.generateQuizLocally(text);
+    } catch (error) {
+      console.error('Quiz generation error:', error.message);
+      return this.generateQuizLocally(text);
+    }
+  }
+
+  generateQuizLocally(text) {
+    const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 20);
+    const quiz = [];
+    const usedIdx = new Set();
+    while (quiz.length < Math.min(4, sentences.length) && usedIdx.size < sentences.length) {
+      const idx = Math.floor(Math.random() * sentences.length);
+      if (usedIdx.has(idx)) continue;
+      usedIdx.add(idx);
+      const sentence = sentences[idx];
+      const words = sentence.split(' ');
+      if (words.length < 5) continue;
+      // Blank out a key word for fill-in-the-blank style
+      const blankIdx = Math.floor(words.length * 0.6);
+      const answer = words[blankIdx];
+      const question = words.map((w, i) => i === blankIdx ? '______' : w).join(' ') + '?';
+      quiz.push({ question: `Fill in the blank: "${question}"`, answer });
+    }
+    if (quiz.length === 0) {
+      quiz.push({ question: 'What is the main topic of this note?', answer: 'See the note content above.' });
+    }
+    return quiz;
+  }
+
   async testConnection() {
     const testText = "This is a test note about artificial intelligence and machine learning concepts.";
-    
+
     try {
       const result = await this.summarize(testText);
       console.log(`${this.provider} API test successful`);

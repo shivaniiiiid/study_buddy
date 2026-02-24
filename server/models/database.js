@@ -64,9 +64,24 @@ const initializeDatabase = () => {
             if (alterErr && !alterErr.message.includes('duplicate column name')) {
               console.log('Note: Could not add pdf_path column (may already exist):', alterErr.message);
             }
-            
-            console.log('Database tables initialized successfully');
-            resolve();
+            // Add is_reviewed column for study progress tracking
+            db.run(`
+              ALTER TABLE notes ADD COLUMN is_reviewed INTEGER DEFAULT 0
+            `, (reviewErr) => {
+              if (reviewErr && !reviewErr.message.includes('duplicate column name')) {
+                console.log('Note: Could not add is_reviewed column:', reviewErr.message);
+              }
+              // Add quiz column for AI-generated quizzes
+              db.run(`
+                ALTER TABLE notes ADD COLUMN quiz TEXT
+              `, (quizErr) => {
+                if (quizErr && !quizErr.message.includes('duplicate column name')) {
+                  console.log('Note: Could not add quiz column:', quizErr.message);
+                }
+                console.log('Database tables initialized successfully');
+                resolve();
+              });
+            });
           });
         }
       });

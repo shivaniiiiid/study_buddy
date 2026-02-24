@@ -28,7 +28,7 @@ export const noteAPI = {
     formData.append('title', data.title);
     if (data.body) formData.append('body', data.body);
     if (file) formData.append('pdf', file);
-    
+
     return api.post(`/courses/${courseId}/notes`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -38,6 +38,8 @@ export const noteAPI = {
   update: (id, data) => api.put(`/notes/${id}`, data),
   delete: (id) => api.delete(`/notes/${id}`),
   summarize: (id) => api.post(`/notes/${id}/summarize`),
+  toggleReview: (id) => api.patch(`/notes/${id}/review`),
+  generateQuiz: (id) => api.post(`/notes/${id}/quiz`),
   getPDF: (filename) => `${API_BASE_URL}/pdf/${filename}`,
 };
 

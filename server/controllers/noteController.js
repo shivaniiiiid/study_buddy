@@ -8,7 +8,7 @@ const noteController = {
   getAllNotes: async (req, res) => {
     try {
       const sql = 'SELECT * FROM notes ORDER BY created_at DESC';
-      
+
       db.all(sql, [], (err, rows) => {
         if (err) {
           return res.status(500).json({
@@ -37,7 +37,7 @@ const noteController = {
     try {
       const { courseId } = req.params;
       const sql = 'SELECT * FROM notes WHERE course_id = ? ORDER BY created_at DESC';
-      
+
       db.all(sql, [courseId], (err, rows) => {
         if (err) {
           return res.status(500).json({
@@ -66,13 +66,13 @@ const noteController = {
     try {
       const { courseId } = req.params;
       let title, body;
-      
+
       // Extract data from FormData (multer converts form data to this format)
       if (req.body) {
         title = req.body.title;
         body = req.body.body || '';
       }
-      
+
       if (!title) {
         return res.status(400).json({
           success: false,
@@ -80,9 +80,9 @@ const noteController = {
           error: 'Note title is required'
         });
       }
-      
+
       let pdfPath = null;
-      
+
       // Handle file upload if present
       if (req.file) {
         // Validate file type
@@ -95,7 +95,7 @@ const noteController = {
         }
         pdfPath = req.file.filename;
       }
-      
+
       // Verify course exists
       db.get('SELECT id FROM courses WHERE id = ?', [courseId], (err, course) => {
         if (err) {
@@ -105,7 +105,7 @@ const noteController = {
             error: err.message
           });
         }
-        
+
         if (!course) {
           return res.status(404).json({
             success: false,
@@ -115,7 +115,7 @@ const noteController = {
         }
 
         const sql = 'INSERT INTO notes (course_id, title, body, pdf_path) VALUES (?, ?, ?, ?)';
-        db.run(sql, [courseId, title, body, pdfPath], function(err) {
+        db.run(sql, [courseId, title, body, pdfPath], function (err) {
           if (err) {
             return res.status(500).json({
               success: false,
@@ -123,7 +123,7 @@ const noteController = {
               error: err.message
             });
           }
-          
+
           // Get the created note
           db.get('SELECT * FROM notes WHERE id = ?', [this.lastID], (err, row) => {
             if (err) {
@@ -155,7 +155,7 @@ const noteController = {
     try {
       const { id } = req.params;
       const sql = 'SELECT * FROM notes WHERE id = ?';
-      
+
       db.get(sql, [id], (err, row) => {
         if (err) {
           return res.status(500).json({
@@ -164,7 +164,7 @@ const noteController = {
             error: err.message
           });
         }
-        
+
         if (!row) {
           return res.status(404).json({
             success: false,
@@ -172,7 +172,7 @@ const noteController = {
             error: 'Note not found'
           });
         }
-        
+
         res.json({
           success: true,
           data: row,
@@ -193,7 +193,7 @@ const noteController = {
     try {
       const { id } = req.params;
       const { title, body } = req.body;
-      
+
       if (!title) {
         return res.status(400).json({
           success: false,
@@ -203,7 +203,7 @@ const noteController = {
       }
 
       const sql = 'UPDATE notes SET title = ?, body = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
-      db.run(sql, [title, body, id], function(err) {
+      db.run(sql, [title, body, id], function (err) {
         if (err) {
           return res.status(500).json({
             success: false,
@@ -211,7 +211,7 @@ const noteController = {
             error: err.message
           });
         }
-        
+
         if (this.changes === 0) {
           return res.status(404).json({
             success: false,
@@ -219,7 +219,7 @@ const noteController = {
             error: 'Note not found'
           });
         }
-        
+
         // Get updated note
         db.get('SELECT * FROM notes WHERE id = ?', [id], (err, row) => {
           if (err) {
@@ -249,7 +249,7 @@ const noteController = {
   deleteNote: async (req, res) => {
     try {
       const { id } = req.params;
-      
+
       // Get note info to delete associated PDF file
       db.get('SELECT pdf_path FROM notes WHERE id = ?', [id], (err, note) => {
         if (err) {
@@ -259,10 +259,10 @@ const noteController = {
             error: err.message
           });
         }
-        
+
         // Delete the note from database
         const sql = 'DELETE FROM notes WHERE id = ?';
-        db.run(sql, [id], function(err) {
+        db.run(sql, [id], function (err) {
           if (err) {
             return res.status(500).json({
               success: false,
@@ -270,7 +270,7 @@ const noteController = {
               error: err.message
             });
           }
-          
+
           if (this.changes === 0) {
             return res.status(404).json({
               success: false,
@@ -278,7 +278,7 @@ const noteController = {
               error: 'Note not found'
             });
           }
-          
+
           // Delete PDF file if it exists
           if (note && note.pdf_path) {
             const filePath = path.join(__dirname, '..', 'uploads', note.pdf_path);
@@ -288,7 +288,7 @@ const noteController = {
               }
             });
           }
-          
+
           res.json({
             success: true,
             data: { message: 'Note deleted successfully' },
@@ -308,10 +308,10 @@ const noteController = {
   // POST /notes/:id/summarize
   summarizeNote: async (req, res) => {
     const startTime = Date.now();
-    
+
     try {
       const { id } = req.params;
-      
+
       // Get the note
       db.get('SELECT * FROM notes WHERE id = ?', [id], async (err, note) => {
         if (err) {
@@ -322,7 +322,7 @@ const noteController = {
             error: err.message
           });
         }
-        
+
         if (!note) {
           return res.status(404).json({
             success: false,
@@ -330,7 +330,7 @@ const noteController = {
             error: 'Note not found'
           });
         }
-        
+
         if (!note.body || note.body.trim() === '') {
           return res.status(400).json({
             success: false,
@@ -338,21 +338,21 @@ const noteController = {
             error: 'Note body is empty'
           });
         }
-        
+
         try {
           console.log('Calling AI service for note ID:', id);
           console.log('AI Provider:', process.env.AI_PROVIDER || 'openai');
-          
+
           // Use AI service to generate summary
           const summary = await aiService.summarize(note.body);
-          
+
           console.log('Generated summary:', summary);
-          
+
           // Update note with summary
           db.run(
             'UPDATE notes SET summary = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
             [summary, id],
-            function(err) {
+            function (err) {
               if (err) {
                 console.error('Database error updating summary:', err);
                 return res.status(500).json({
@@ -361,7 +361,7 @@ const noteController = {
                   error: err.message
                 });
               }
-              
+
               // Get updated note
               db.get('SELECT * FROM notes WHERE id = ?', [id], (err, updatedNote) => {
                 if (err) {
@@ -372,10 +372,10 @@ const noteController = {
                     error: err.message
                   });
                 }
-                
+
                 const latency = Date.now() - startTime;
                 console.log('Summary generated successfully in', latency, 'ms');
-                
+
                 res.json({
                   success: true,
                   data: { note: updatedNote },
@@ -387,9 +387,9 @@ const noteController = {
           );
         } catch (apiError) {
           console.error('AI Service Error:', apiError.message);
-          
+
           let errorMessage = 'Failed to generate summary';
-          
+
           if (apiError.message.includes('OpenAI')) {
             errorMessage = 'OpenAI API error. You may want to try a different AI provider.';
           } else if (apiError.message.includes('Hugging Face')) {
@@ -401,7 +401,7 @@ const noteController = {
           } else {
             errorMessage = `AI Service Error: ${apiError.message}`;
           }
-          
+
           res.status(500).json({
             success: false,
             data: null,
@@ -423,7 +423,7 @@ const noteController = {
   servePDF: (req, res) => {
     const { filename } = req.params;
     const filePath = path.join(__dirname, '..', 'uploads', filename);
-    
+
     // Check if file exists
     fs.access(filePath, fs.constants.F_OK, (err) => {
       if (err) {
@@ -433,7 +433,7 @@ const noteController = {
           error: 'PDF file not found'
         });
       }
-      
+
       // Serve the PDF file
       res.sendFile(filePath, (err) => {
         if (err) {
@@ -445,6 +445,61 @@ const noteController = {
         }
       });
     });
+  },
+
+  // PATCH /notes/:id/review - Toggle reviewed status
+  toggleReview: async (req, res) => {
+    try {
+      const { id } = req.params;
+      db.get('SELECT is_reviewed FROM notes WHERE id = ?', [id], (err, note) => {
+        if (err) return res.status(500).json({ success: false, data: null, error: err.message });
+        if (!note) return res.status(404).json({ success: false, data: null, error: 'Note not found' });
+        const newValue = note.is_reviewed ? 0 : 1;
+        db.run(
+          'UPDATE notes SET is_reviewed = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+          [newValue, id],
+          function (err) {
+            if (err) return res.status(500).json({ success: false, data: null, error: err.message });
+            db.get('SELECT * FROM notes WHERE id = ?', [id], (err, updated) => {
+              if (err) return res.status(500).json({ success: false, data: null, error: err.message });
+              res.json({ success: true, data: updated, error: null });
+            });
+          }
+        );
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, data: null, error: error.message });
+    }
+  },
+
+  // POST /notes/:id/quiz - Generate AI quiz questions
+  generateQuiz: async (req, res) => {
+    try {
+      const { id } = req.params;
+      db.get('SELECT * FROM notes WHERE id = ?', [id], async (err, note) => {
+        if (err) return res.status(500).json({ success: false, data: null, error: err.message });
+        if (!note) return res.status(404).json({ success: false, data: null, error: 'Note not found' });
+        if (!note.body || note.body.trim() === '') {
+          return res.status(400).json({ success: false, data: null, error: 'Note body is empty — add content first.' });
+        }
+        try {
+          const quiz = await aiService.generateQuiz(note.body);
+          const quizJson = JSON.stringify(quiz);
+          db.run(
+            'UPDATE notes SET quiz = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [quizJson, id],
+            function (err) {
+              if (err) return res.status(500).json({ success: false, data: null, error: err.message });
+              res.json({ success: true, data: { quiz }, error: null });
+            }
+          );
+        } catch (aiError) {
+          res.status(500).json({ success: false, data: null, error: `Quiz generation failed: ${aiError.message}` });
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, data: null, error: error.message });
+    }
   }
 };
 
@@ -456,5 +511,7 @@ module.exports = {
   updateNote: noteController.updateNote,
   deleteNote: noteController.deleteNote,
   summarizeNote: noteController.summarizeNote,
+  toggleReview: noteController.toggleReview,
+  generateQuiz: noteController.generateQuiz,
   servePDF: noteController.servePDF
 };

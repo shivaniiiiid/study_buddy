@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { courseAPI, noteAPI } from '../services/api';
+import Header from '../components/Header';
 
 const Dashboard = () => {
   const [courses, setCourses] = useState([]);
@@ -9,10 +10,14 @@ const Dashboard = () => {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '' });
   const [formLoading, setFormLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    fetchCourses();
-    fetchNotes();
+    const loadData = async () => {
+      await Promise.all([fetchCourses(), fetchNotes()]);
+      setLoading(false);
+    };
+    loadData();
   }, []);
 
   const fetchCourses = async () => {
@@ -33,18 +38,9 @@ const Dashboard = () => {
     }
   };
 
-  useEffect(() => {
-    const loadData = async () => {
-      await Promise.all([fetchCourses(), fetchNotes()]);
-      setLoading(false);
-    };
-    loadData();
-  }, []);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormLoading(true);
-    
     try {
       const response = await courseAPI.create(formData);
       setCourses([...courses, response.data.data]);
@@ -58,10 +54,10 @@ const Dashboard = () => {
   };
 
   const handleDelete = async (courseId) => {
-    if (window.confirm('Are you sure you want to delete this course? All notes will be deleted as well.')) {
+    if (window.confirm('Delete this course? All notes will be permanently removed.')) {
       try {
         await courseAPI.delete(courseId);
-        setCourses(courses.filter(course => course.id !== courseId));
+        setCourses(courses.filter(c => c.id !== courseId));
       } catch (error) {
         console.error('Error deleting course:', error);
       }
@@ -69,158 +65,239 @@ const Dashboard = () => {
   };
 
   const getCourseIcon = (courseName) => {
-    const icons = ['📚', '🎓', '📖', '📝', '🔬', '�', '🎨', '�'];
-    const index = courseName.length % icons.length;
-    return icons[index];
+    const icons = ['📚', '🎓', '📖', '📝', '🔬', '💻', '🎨', '📊'];
+    return icons[courseName.length % icons.length];
   };
 
-  const getNoteCount = (courseId) => {
-    // Get actual note count from the notes data
-    const courseNotes = notes.filter(note => note.course_id === courseId);
-    return courseNotes.length;
-  };
+  const getNoteCount = (courseId) =>
+    notes.filter(n => n.course_id === courseId).length;
 
   if (loading) {
     return (
-      <div className="container">
-        <div className="header">
-          <h1>StudyBuddy</h1>
-          <div className="subtitle">Your AI-powered study organization tool</div>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-          <div className="loading loading-lg"></div>
+      <div className="App">
+        <Header />
+        <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div className="loading loading-lg" style={{ margin: '0 auto 1.5rem' }}></div>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Loading your study space...</p>
+          </div>
         </div>
       </div>
     );
   }
 
+  const totalNotes = courses.reduce((acc, c) => acc + getNoteCount(c.id), 0);
+  const activeCourses = courses.filter(c => getNoteCount(c.id) > 0).length;
+  const reviewedNotes = notes.filter(n => n.is_reviewed).length;
+
+  const q = searchQuery.toLowerCase().trim();
+  const filteredCourses = q
+    ? courses.filter(c =>
+      c.name.toLowerCase().includes(q) ||
+      (c.description || '').toLowerCase().includes(q)
+    )
+    : courses;
+  const filteredNotes = q
+    ? notes.filter(n => n.title.toLowerCase().includes(q) || (n.body || '').toLowerCase().includes(q))
+    : [];
+
   return (
     <div className="App">
+      <Header />
+
       <div className="container">
-        <div className="header">
-          <h1>StudyBuddy</h1>
-          <div className="subtitle">Your AI-powered study organization tool</div>
+        {/* Hero */}
+        <div className="hero-banner fade-in">
+          <div className="hero-title">Welcome back! 👋</div>
+          <div className="hero-subtitle">
+            {courses.length === 0
+              ? 'Start your learning journey — create your first course below.'
+              : `You have ${courses.length} course${courses.length !== 1 ? 's' : ''} and ${totalNotes} note${totalNotes !== 1 ? 's' : ''}. Keep it up!`}
+          </div>
         </div>
-        
-        <div className="stats-grid">
+
+        {/* Stats */}
+        <div className="stats-grid fade-in">
           <div className="stat-card">
             <div className="stat-number">{courses.length}</div>
             <div className="stat-label">Total Courses</div>
           </div>
           <div className="stat-card">
-            <div className="stat-number">{courses.reduce((acc, course) => acc + getNoteCount(course.id), 0)}</div>
+            <div className="stat-number">{totalNotes}</div>
             <div className="stat-label">Total Notes</div>
           </div>
           <div className="stat-card">
-            <div className="stat-number">{courses.filter(course => getNoteCount(course.id) > 0).length}</div>
+            <div className="stat-number">{activeCourses}</div>
             <div className="stat-label">Active Courses</div>
           </div>
+          <div className="stat-card">
+            <div className="stat-number" style={{ background: 'var(--grad-green)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{reviewedNotes}</div>
+            <div className="stat-label">Reviewed ✅</div>
+          </div>
         </div>
-        
-        <div className="page-title">My Courses</div>
-        
+
+        {/* Search Bar */}
+        {courses.length > 0 && (
+          <div className="search-bar fade-in">
+            <span className="search-icon">🔍</span>
+            <input
+              id="dashboard-search"
+              type="text"
+              className="search-input"
+              placeholder="Search courses and notes..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              autoComplete="off"
+            />
+            {searchQuery && (
+              <button className="search-clear" onClick={() => setSearchQuery('')} title="Clear search">✕</button>
+            )}
+          </div>
+        )}
+
+        {/* Section Title */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem' }}>
+          <div className="page-title" style={{ margin: 0 }}>My Courses</div>
+          {!showForm && courses.length > 0 && (
+            <button className="btn" onClick={() => setShowForm(true)} id="add-course-btn">
+              <span>➕</span> New Course
+            </button>
+          )}
+        </div>
+
+        {/* Create Course Form */}
         {showForm && (
           <div className="form-container fade-in">
             <div className="form-title">
-              <div className="form-icon">➕</div>
+              <div className="form-icon">📚</div>
               Create New Course
             </div>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label className="form-label">Course Name *</label>
-                <div className="input-group">
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g., Computer Science 101"
-                    required
-                  />
-                </div>
+                <input
+                  id="course-name-input"
+                  type="text"
+                  className="form-input"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g., Computer Science 101"
+                  required
+                  autoFocus
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">Description</label>
                 <textarea
+                  id="course-desc-input"
                   className="form-textarea"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows="3"
-                  placeholder="Brief description of the course..."
+                  placeholder="Brief description of this course..."
                 />
               </div>
-              <div className="actions">
-                <button type="submit" className="btn btn-lg" disabled={formLoading}>
-                  {formLoading ? <div className="loading"></div> : 'Create Course'}
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button type="submit" className="btn btn-lg" disabled={formLoading} id="create-course-submit">
+                  {formLoading ? <><div className="loading"></div> Creating...</> : '✅ Create Course'}
                 </button>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary btn-lg" 
-                  onClick={() => setShowForm(false)}
-                >
+                <button type="button" className="btn btn-secondary btn-lg" onClick={() => setShowForm(false)}>
                   Cancel
                 </button>
               </div>
             </form>
           </div>
         )}
-        
-        {!showForm && (
-          <button className="btn btn-lg" onClick={() => setShowForm(true)}>
-            <span>➕</span> Add New Course
-          </button>
-        )}
-        
-        {courses.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">📚</div>
+
+        {/* Empty State */}
+        {courses.length === 0 && !showForm ? (
+          <div className="empty-state fade-in">
+            <span className="empty-state-icon">📚</span>
             <h3>No courses yet</h3>
             <p>Start organizing your study materials by creating your first course.</p>
-            <button className="btn btn-lg" onClick={() => setShowForm(true)}>
-              Create Your First Course
+            <button className="btn btn-lg" id="first-course-btn" onClick={() => setShowForm(true)}>
+              🚀 Create Your First Course
             </button>
           </div>
         ) : (
-          <div className="course-list">
-            {courses.map((course, index) => (
-              <div key={course.id} className="course-card fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
-                <Link to={`/course/${course.id}`} style={{ textDecoration: 'none' }}>
-                  <div className="course-title">
-                    <div className="course-icon">{getCourseIcon(course.name)}</div>
-                    {course.name}
-                  </div>
-                  {course.description && (
-                    <div className="course-description">{course.description}</div>
-                  )}
-                </Link>
-                <div className="course-meta">
-                  <div className="course-stats">
-                    <div className="stat-item">
-                      <span>📝</span>
-                      <span>{getNoteCount(course.id)} notes</span>
-                    </div>
-                    <div className="stat-item">
-                      <span>📅</span>
-                      <span>{new Date(course.created_at).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                  <button 
-                    className="btn btn-danger btn-sm" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(course.id);
-                    }}
-                  >
-                    🗑️ Delete
-                  </button>
+          <>
+            {/* Matching Notes (shown only during search) */}
+            {filteredNotes.length > 0 && (
+              <div style={{ marginBottom: '2rem' }}>
+                <div className="page-title" style={{ marginBottom: '1rem', fontSize: '1.1rem', color: 'var(--text-secondary)' }}>
+                  📝 Matching Notes ({filteredNotes.length})
+                </div>
+                <div className="note-list">
+                  {filteredNotes.map(note => (
+                    <Link key={note.id} to={`/note/${note.id}`} style={{ textDecoration: 'none' }}>
+                      <div className="note-card">
+                        <div className="note-title">
+                          <div className="note-icon">📝</div>
+                          {note.title}
+                          {note.is_reviewed ? <span className="badge badge-success" style={{ marginLeft: 'auto' }}>✅ Reviewed</span> : null}
+                        </div>
+                        {note.body && <div className="note-preview">{note.body.substring(0, 120)}…</div>}
+                      </div>
+                    </Link>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
+            )}
+
+            {/* Course List */}
+            {filteredCourses.length === 0 && q ? (
+              <div className="empty-state fade-in">
+                <span className="empty-state-icon">🔍</span>
+                <h3>No results found</h3>
+                <p>No courses match "<strong>{searchQuery}</strong>". Try a different search term.</p>
+                <button className="btn" onClick={() => setSearchQuery('')}>Clear Search</button>
+              </div>
+            ) : (
+              <div className="course-list">
+                {filteredCourses.map((course, index) => (
+                  <div
+                    key={course.id}
+                    className="course-card fade-in"
+                    style={{ animationDelay: `${index * 0.07}s` }}
+                  >
+                    <Link to={`/course/${course.id}`} style={{ textDecoration: 'none' }}>
+                      <div className="course-title">
+                        <div className="course-icon">{getCourseIcon(course.name)}</div>
+                        {course.name}
+                      </div>
+                      {course.description && (
+                        <div className="course-description">{course.description}</div>
+                      )}
+                    </Link>
+                    <div className="course-meta">
+                      <div className="course-stats">
+                        <div className="stat-item">
+                          <span>📝</span>
+                          <span>{getNoteCount(course.id)} note{getNoteCount(course.id) !== 1 ? 's' : ''}</span>
+                        </div>
+                        <div className="stat-item">
+                          <span>📅</span>
+                          <span>{new Date(course.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                        </div>
+                      </div>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        id={`delete-course-${course.id}`}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(course.id); }}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
-        
+
+        {/* Floating Add Button */}
         {!showForm && courses.length > 0 && (
-          <button className="floating-btn" onClick={() => setShowForm(true)} title="Add New Course">
+          <button className="floating-btn" id="floating-add-btn" onClick={() => setShowForm(true)} title="Add New Course">
             ➕
           </button>
         )}
