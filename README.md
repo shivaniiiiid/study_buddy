@@ -1,5 +1,8 @@
 # StudyBuddy — AI-Powered Study Organizer
 
+🚀 **Live Project**: https://studybuddy-production-168f.up.railway.app/  
+📹 **Project Demo**: https://drive.google.com/file/d/14DggWaogHF3aLqWmN3N-ouaQ-1jQLZeA/view?usp=drivesdk
+
 StudyBuddy is a full-stack web application that helps students organize courses and notes, with AI-powered summarization, quiz generation, and study progress tracking. Built with React, Node.js/Express, and SQLite.
 
 ---
